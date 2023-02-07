@@ -20,7 +20,7 @@ logging.basicConfig(
 )
 
 captchaApi = "anti-captcha.com"
-captchaKey = ""  # YOUR ANTI CAPTCHA KEY!
+captchaKey = input("Enter your anti-captcha key: ")  # YOUR ANTI CAPTCHA KEY!
 
 System.Clear() 
 os.system('title PRESS ENTER')
