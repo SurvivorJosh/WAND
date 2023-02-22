@@ -43,7 +43,7 @@ ___  ___  ___   .---.   ___ .-.     .-.| |
                                              
     
                                       
-          Join discord.gg/ratio
+          Join discord.gg/still
     '''
 Anime.Fade(Center.Center(logo), Colors.rainbow, Colorate.Vertical, interval=0.020, enter=True)
 
