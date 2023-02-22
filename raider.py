@@ -2,8 +2,10 @@ try:
     import aiohttp, asyncio, os, sys, threading, requests, time, aiohttp, asyncio, random, string, httpx
     from pystyle                                                             import Add, Center, Anime, Colors, Colorate, Write, System
     from colorama import Fore, Back, Style
+    from concurrent.futures import ThreadPoolExecutor
     import logging
-    
+    import websocket
+    import json
 except:
     os.system('pip install httpx')
     os.system('pip install pystyle')
@@ -11,11 +13,13 @@ except:
     os.system('pip install requests')
     os.system('pip install colorama')
     os.system('pip install logging')
+    os.system('pip install websocket')
+    os.system('pip install websocket-client')
     os.system('py raider.py')
 
 logging.basicConfig(
     level=logging.INFO,
-    format="\033[38;5;21m[\033[0m%(asctime)s.%(msecs)03d\033[38;5;21m] \033[0m%(message)s\033[0m",
+    format="\033[38;5;196m[\033[0m%(asctime)s.%(msecs)03d\033[38;5;196m] \033[0m%(message)s\033[0m",
     datefmt="%H:%M:%S"
 )
 
@@ -70,9 +74,15 @@ except:
 System.Clear()
 
 
+def randstr(lenn):
+    alpha = "abcdefghijklmnopqrstuvwxyz0123456789"
+    text = ''
+    for i in range(0, lenn):
+        text += alpha[random.randint(0, len(alpha) - 1)]
+    return text
     
     
-def secondHeader(token):
+def thirdHeader(token):
     return {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/1.0.9001 Chrome/83.0.4103.122 Electron/9.3.5 Safari/537.36',
         'accept': '*/*',
@@ -118,7 +128,110 @@ def bypassHeader(token):
     }
     
 
+
+def mainHeaders(token):
+    return {
+        "authorization": token,
+        "accept": "*/*",
+        'accept-encoding': 'gzip, deflate, br',
+        "accept-language": "en-GB",
+        "content-length": "90",
+        "content-type": "application/json",
+        "cookie": f"__cfuid={randstr(43)}; __dcfduid={randstr(32)}; locale=en-US",
+        "origin": "https://discord.com",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/1.0.9003 Chrome/91.0.4472.164 Electron/13.4.0 Safari/537.36",
+        "x-debug-options": "bugReporterEnabled",
+        "x-super-properties": "eyJvcyI6IldpbmRvd3MiLCJicm93c2VyIjoiRGlzY29yZCBDbGllbnQiLCJyZWxlYXNlX2NoYW5uZWwiOiJzdGFibGUiLCJjbGllbnRfdmVyc2lvbiI6IjEuMC45MDAzIiwib3NfdmVyc2lvbiI6IjEwLjAuMjI0NjMiLCJvc19hcmNoIjoieDY0Iiwic3lzdGVtX2xvY2FsZSI6InNrIiwiY2xpZW50X2J1aWxkX251bWJlciI6OTkwMTYsImNsaWVudF9ldmVudF9zb3VyY2UiOm51bGx9"
+    }
+ 
+def friend_req(token, user):
+    try:
+        target = user.split('#')
+        headers=bypassHeader(token)
+        json = {"username": target[0], "discriminator": target[1]}
+        
+        r = requests.post(f'https://discord.com/api/v9/users/@me/relationships', headers=headers, json=json)
+        if r.status_code == 204:
+            logging.info(f'Friend request sent to {target[0]}#{target[1]}')
+        elif r.status_code == 429:
+            b = r.json()
+            logging.info(f'Ratelimited, retrying in {b["retry_after"]} seconds..')
+            
+        else:
+            solved = Captcha()
+            r = requests.post(f'https://discord.com/api/v9/users/@me/relationships', headers=headers, json={"username": target[0], "discriminator": target[1], "captcha_key": solved})
+            if r.status_code == 204:
+                logging.info(f'Friend request sent to {target[0]}#{target[1]}')
+            elif r.status_code == 429:
+                b = r.json()
+                logging.info(f'Ratelimited, retrying in {b["retry_after"]} seconds..')
+    except Exception as err:
+        print("ERROR")
+        print()
+        print(err)        
+
+async def friender():
+    print()
+    us = input("Target's Username + tag: ")
+    tokens = open("tokens.txt").read().split('\n')
+    for token in tokens:
+        t = threading.Thread(target=friend_req, args=(token, us,)).start()
+       
+
+
+async def vcSpammer():
     
+    tokens = open("tokens.txt").read().split("\n")
+    channel = int(input("channel id >  "))
+    guild = int(input("guild id  >  "))
+    mute = input("mute? (y/n)  >  ")
+    deaf = input("deafen? (y/n)  >  ")
+    video = input("video? (y/n)  >  ")
+    
+    
+    if mute == "y":
+        mute = True
+        
+    else:
+        mute = False
+        
+    if deaf == "y":
+        deaf = True
+        
+    else:
+        deaf = False
+        
+    if video == "y":
+        video = True
+        
+    else:
+        video = False
+        
+    
+        
+    exe = ThreadPoolExecutor(max_workers=1000)
+    
+    def spam(token):
+        while True:
+            socket = websocket.WebSocket()
+            socket.connect("wss://gateway.discord.gg/?v=8&encoding=json")
+            h = json.loads(socket.recv())
+            heartbeat = h['d']['heartbeat_interval']
+            socket.send(json.dumps({"op": 2, "d": {"token": token, "properties": {"$os": "windows", "$browser": "Discord", "$device": "desktop"}}}))
+            socket.send(json.dumps({"op": 4, "d": {"guild_id": guild, "channel_id": channel, "self_mute": mute, "self_deaf": deaf, "self_video": video}}))
+            
+        
+    
+    for token in tokens:
+        exe.submit(spam, token)
+        logging.info("Joined VC")
+        
+        
+    
+    enter = input("press ENTER to stop VC spammer")        
     
 def token_joiner(token, inv):
         
@@ -158,12 +271,12 @@ async def mass_join():
         invite = ins[1]
     except:
         invite = inv
-    tokens = open("tokens.txt", "r").readlines()
+    tokens = open("tokens.txt", "r").read().split("\n")
    
     for token in tokens:
-        tok = token.strip()
         
-        threading.Thread(target=token_joiner, args=(tok, invite,)).start()
+        
+        threading.Thread(target=token_joiner, args=(token, invite,)).start()
     
 def spam(token, channel, message):
     url = 'https://discord.com/api/v9/channels/' + channel + '/messages'
@@ -210,6 +323,9 @@ async def main():
     
             [1] Token Joiner
             [2] Server Raider
+            [3] Friend Spammer
+            [4] VC Spammer
+            [r] Restart Program
             [x] Exit           
     """)
     choice = input("   >  ")
@@ -237,6 +353,23 @@ async def main():
         await asyncio.sleep(2)
         await main()
         
+    elif choice == "3":
+        await friender()
+        await asyncio.sleep(2)
+        await main()
+        
+    elif choice == "4":
+        await vcSpammer()
+        
+        await asyncio.sleep(2)
+        await main()
+        
+    elif choice == "r" or choice == "R":
+        System.Clear()
+        os.system('py raider.py')
+        
+    
+        
     elif choice == "x" or choice == "X":
         print("Exiting....")
         await asyncio.sleep(1)
@@ -249,5 +382,5 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())         
+    asyncio.run(main())       
         
